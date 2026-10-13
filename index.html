@@ -50,6 +50,24 @@
       border: 1px solid rgba(255,255,255,.08);
     }
 
+    #orientationGate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 42%, #242052, #05050f 66%);
+    }
+
+    .orientation-card { max-width: 330px; }
+    .orientation-phone { display: block; margin-bottom: 18px; color: var(--cyan); font-size: 72px; line-height: 1; transform: rotate(90deg); }
+    .orientation-card strong { display: block; color: var(--gold); font-size: 24px; }
+    .orientation-card p { margin: 8px 0 18px; color: #c8c4e8; }
+    #rotateScreenBtn { width: 100%; padding: 0 20px; }
+
     #gameCanvas {
       width: 100%;
       height: 100%;
@@ -584,6 +602,11 @@
       body.mobile-controls #touchControls.active { display: block; }
     }
 
+    @media (pointer: coarse) and (orientation: portrait) {
+      body.mobile-controls #orientationGate { display: flex; }
+      body.mobile-controls #app { visibility: hidden; }
+    }
+
     body.capacitor-native.mobile-controls #touchControls.active { display: block; }
 
     @media (max-width: 1100px) {
@@ -637,6 +660,14 @@
   </style>
 </head>
 <body>
+  <div id="orientationGate" role="dialog" aria-label="请横放手机">
+    <div class="orientation-card">
+      <span class="orientation-phone" aria-hidden="true">▯</span>
+      <strong>请横放手机</strong>
+      <p>横屏体验更完整<br />Rotate your phone to landscape</p>
+      <button id="rotateScreenBtn" class="primary" type="button">尝试进入横屏 / Go landscape</button>
+    </div>
+  </div>
   <main id="app" aria-label="星灯遗迹游戏原型">
     <canvas id="gameCanvas" width="1280" height="720"></canvas>
     <div id="scanlines"></div>
@@ -2423,6 +2454,29 @@
       if (document.visibilityState === "hidden" && state.mode === "playing") pauseGame();
     });
 
+    function refreshOrientationGate() {
+      const portrait = mobileControlsEnabled && innerHeight > innerWidth;
+      document.body.classList.toggle("portrait-mobile", portrait);
+      if (portrait) {
+        clearTouchControls();
+        if (state.mode === "playing") pauseGame();
+      }
+    }
+
+    async function requestLandscapeMode() {
+      if (!mobileControlsEnabled || nativePlatform) return;
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+      } catch {}
+      try { await screen.orientation?.lock?.("landscape"); } catch {}
+      refreshOrientationGate();
+    }
+
+    window.addEventListener("orientationchange", () => setTimeout(refreshOrientationGate, 120));
+    window.addEventListener("resize", refreshOrientationGate);
+    document.getElementById("rotateScreenBtn").addEventListener("click", requestLandscapeMode);
+    refreshOrientationGate();
+
     let lastAndroidBackAt = 0;
     window.handleAndroidBack = function () {
       clearTouchControls();
@@ -2493,7 +2547,10 @@
       else showToast(t("toastQuit"));
     });
 
-    document.getElementById("startBtn").addEventListener("click", () => startGame(true));
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      await requestLandscapeMode();
+      startGame(true);
+    });
     document.getElementById("continueBtn").addEventListener("click", continueSavedGame);
     document.getElementById("resumeBtn").addEventListener("click", resumeGame);
     document.getElementById("restartBtn").addEventListener("click", restartCurrentChapter);
