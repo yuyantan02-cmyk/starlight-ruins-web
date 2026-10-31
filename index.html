@@ -484,6 +484,21 @@
 
     #tutorial.show { opacity: 1; }
 
+    body.mobile-controls:not(.capacitor-native) #tutorial {
+      top: 108px;
+      bottom: auto;
+      min-width: 0;
+      width: max-content;
+      max-width: 72%;
+      padding: 4px 10px;
+      border-width: 1px;
+      border-radius: 999px;
+      background: rgba(10,9,28,.72);
+      font-size: clamp(10px, 1.8vh, 12px);
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+
     #toast {
       position: absolute;
       top: 10%;
@@ -884,7 +899,7 @@
       </div>
       <button id="touchPause" type="button" aria-label="暂停">Ⅱ</button>
     </div>
-    <div class="prototype-tag">OFFLINE WEB v1.0.1</div>
+    <div class="prototype-tag">OFFLINE WEB v1.0.2</div>
   </main>
 
   <script>
