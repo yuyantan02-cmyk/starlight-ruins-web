@@ -50,6 +50,15 @@
       border: 1px solid rgba(255,255,255,.08);
     }
 
+    body.mobile-controls:not(.capacitor-native) #app {
+      width: 100vw;
+      height: 100dvh;
+      min-width: 0;
+      min-height: 0;
+      border: 0;
+      box-shadow: none;
+    }
+
     #orientationGate {
       position: fixed;
       inset: 0;
@@ -534,18 +543,18 @@
     }
 
     #touchControls button {
-      width: clamp(50px, 10vh, 76px);
+      width: clamp(44px, 7vh, 56px);
       min-width: 0;
-      height: clamp(50px, 10vh, 76px);
+      height: clamp(44px, 7vh, 56px);
       min-height: 0;
       padding: 0;
-      border: 2px solid rgba(125,246,255,.78);
+      border: 1px solid rgba(125,246,255,.68);
       border-radius: 50%;
-      background: rgba(12,12,36,.52);
+      background: rgba(12,12,36,.36);
       color: #f4f0ff;
-      font-size: clamp(19px, 4vh, 29px);
+      font-size: clamp(16px, 3vh, 22px);
       line-height: 1;
-      opacity: .58;
+      opacity: .3;
       pointer-events: auto;
       touch-action: none;
       box-shadow: 0 3px 0 rgba(0,0,0,.5), inset 0 0 18px rgba(125,246,255,.08);
@@ -560,12 +569,12 @@
 
     .touch-dpad {
       position: absolute;
-      left: max(18px, env(safe-area-inset-left));
-      bottom: max(16px, env(safe-area-inset-bottom));
+      left: max(8px, env(safe-area-inset-left));
+      bottom: max(8px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-columns: repeat(3, clamp(50px, 10vh, 76px));
-      grid-template-rows: repeat(2, clamp(50px, 10vh, 76px));
-      gap: 6px;
+      grid-template-columns: repeat(3, clamp(44px, 7vh, 56px));
+      grid-template-rows: repeat(2, clamp(44px, 7vh, 56px));
+      gap: 3px;
     }
 
     .touch-dpad [data-touch-control="up"] { grid-column: 2; grid-row: 1; }
@@ -575,27 +584,27 @@
 
     .touch-actions {
       position: absolute;
-      right: max(20px, env(safe-area-inset-right));
-      bottom: max(20px, env(safe-area-inset-bottom));
+      right: max(10px, env(safe-area-inset-right));
+      bottom: max(10px, env(safe-area-inset-bottom));
       display: flex;
       align-items: flex-end;
-      gap: clamp(12px, 3vw, 28px);
+      gap: 8px;
     }
 
     .touch-actions [data-touch-control="jump"] {
-      width: clamp(62px, 13vh, 92px);
-      height: clamp(62px, 13vh, 92px);
+      width: clamp(52px, 9vh, 64px);
+      height: clamp(52px, 9vh, 64px);
       color: var(--gold);
       border-color: rgba(255,211,106,.82);
     }
 
     #touchPause {
       position: absolute;
-      top: max(78px, calc(env(safe-area-inset-top) + 68px));
-      right: max(18px, env(safe-area-inset-right));
-      width: clamp(40px, 7vh, 54px) !important;
-      height: clamp(40px, 7vh, 54px) !important;
-      font-size: clamp(15px, 2.6vh, 20px) !important;
+      top: max(70px, calc(env(safe-area-inset-top) + 60px));
+      right: max(10px, env(safe-area-inset-right));
+      width: clamp(40px, 6vh, 46px) !important;
+      height: clamp(40px, 6vh, 46px) !important;
+      font-size: clamp(14px, 2.3vh, 18px) !important;
     }
 
     @media (pointer: coarse) {
@@ -875,7 +884,7 @@
       </div>
       <button id="touchPause" type="button" aria-label="暂停">Ⅱ</button>
     </div>
-    <div class="prototype-tag">OFFLINE PC v1.0.0</div>
+    <div class="prototype-tag">OFFLINE WEB v1.0.1</div>
   </main>
 
   <script>
@@ -890,7 +899,7 @@
     const darknessCtx = darknessCanvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
 
-    const W = 1280;
+    let W = 1280;
     const H = 720;
     const WORLD_W = 190000;
     const FLOOR_Y = 620;
@@ -2326,6 +2335,24 @@
       document.getElementById("continueBtn").hidden = !persistentData.progress;
     }
 
+    function syncMobileViewport() {
+      const [, selectedHeight] = settings.resolution.split("x").map(Number);
+      const viewportWidth = window.visualViewport?.width || innerWidth;
+      const viewportHeight = window.visualViewport?.height || innerHeight;
+      const previousWidth = W;
+      const mobileLandscape = mobileControlsEnabled && !nativePlatform && viewportWidth > viewportHeight;
+      W = mobileLandscape ? Math.max(1280, Math.round(H * viewportWidth / viewportHeight)) : 1280;
+      if (previousWidth !== W) {
+        for (const star of state.stars) star.x = star.x / previousWidth * W;
+      }
+      const scale = mobileLandscape ? 1 : selectedHeight / H;
+      canvas.width = Math.round(W * scale);
+      canvas.height = Math.round(H * scale);
+      darknessCanvas.width = canvas.width;
+      darknessCanvas.height = canvas.height;
+      ctx.imageSmoothingEnabled = false;
+    }
+
     function syncSettingsControls() {
       document.getElementById("resolutionSelect").value = settings.resolution;
       document.getElementById("frameRateSelect").value = String(settings.frameRate);
@@ -2333,10 +2360,7 @@
       document.getElementById("musicVolumeRange").value = Math.round(settings.musicVolume * 100);
       document.getElementById("sfxVolumeRange").value = Math.round(settings.sfxVolume * 100);
       updateMusicToggleButton();
-      const size = settings.resolution.split("x").map(Number);
-      canvas.width = size[0];
-      canvas.height = size[1];
-      ctx.imageSmoothingEnabled = false;
+      syncMobileViewport();
       document.querySelectorAll("[data-difficulty]").forEach(button => {
         button.classList.toggle("selected", button.dataset.difficulty === state.difficulty);
       });
@@ -2457,6 +2481,7 @@
     function refreshOrientationGate() {
       const portrait = mobileControlsEnabled && innerHeight > innerWidth;
       document.body.classList.toggle("portrait-mobile", portrait);
+      syncMobileViewport();
       if (portrait) {
         clearTouchControls();
         if (state.mode === "playing") pauseGame();
@@ -2474,6 +2499,7 @@
 
     window.addEventListener("orientationchange", () => setTimeout(refreshOrientationGate, 120));
     window.addEventListener("resize", refreshOrientationGate);
+    window.visualViewport?.addEventListener("resize", refreshOrientationGate);
     document.getElementById("rotateScreenBtn").addEventListener("click", requestLandscapeMode);
     refreshOrientationGate();
 
@@ -2502,10 +2528,7 @@
 
     document.getElementById("resolutionSelect").addEventListener("change", e => {
       settings.resolution = e.target.value;
-      const [rw, rh] = e.target.value.split("x").map(Number);
-      canvas.width = rw;
-      canvas.height = rh;
-      ctx.imageSmoothingEnabled = false;
+      syncMobileViewport();
       persistData();
     });
     document.getElementById("languageToggleBtn").addEventListener("click", () => {
